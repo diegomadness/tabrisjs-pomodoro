@@ -1,0 +1,16 @@
+{
+  "name": "timetracker",
+  "version": "0.1.0",
+  "main": "src/app.js",
+  "private": true,
+  "scripts": {
+    "test": "eslint .",
+    "start": "tabris serve"
+  },
+  "dependencies": {
+    "tabris": "^2.6.2"
+  },
+  "devDependencies": {
+    "eslint": "^5.0.0"
+  }
+}
