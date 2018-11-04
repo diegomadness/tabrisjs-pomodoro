@@ -32,6 +32,19 @@ mainPageContent();
 //display fresh timer
 clockDisplayWorkingTime();
 
+sqlitePlugin.echoTest(function() {
+  console.log('ECHO test OK');
+});
+
+sqlitePlugin.selfTest(function() {
+  console.log('SELF test OK');
+});
+
+
+
+
+
+
 function mainPageContent() {
   //timer button group - play, pause, stop and resume buttons
   let timerButtonGroup = new Composite({
@@ -122,8 +135,6 @@ function mainPageContent() {
     font:'80px',
     alignment: 'center'
   }).appendTo(mainPage);
-
-
 }
 
 
