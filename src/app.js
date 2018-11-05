@@ -1,12 +1,15 @@
 const {Composite, Button, TextView, NavigationView, Page, Slider,ToggleButton, ui} = require('tabris');
-const bgColor = '#ffffff';
-let appSettings = {
-  workInterval: 15,
-  breakInterval:5
+const BG_COLOR = '#ffffff';
+const TYPE_WORK = 1;
+const TYPE_BREAK = 2;
+
+const defaultSettings = {
+  workInterval: 1,
+  breakInterval:1,
+  vibration:false,
+  sound:false
 };
-let refreshTimer = null;
-let workTimer = null;
-let timeLeft = appSettings.workInterval;
+let mainTimer = null;
 
 // Enable the drawer - left slide menu
 let drawer = ui.drawer;
@@ -20,7 +23,7 @@ let navigationView = new NavigationView({
   top: 0,
   right: 0,
   bottom: 0,
-  drawerActionVisible:true //sandwich button for openong the drawer
+  drawerActionVisible:true //sandwich button for opening the drawer
 }).appendTo(ui.contentView);
 
 //creating main application page
@@ -32,25 +35,380 @@ mainPageContent();
 //display fresh timer
 clockDisplayWorkingTime();
 
-sqlitePlugin.echoTest(function() {
-  console.log('ECHO test OK');
-});
-
-sqlitePlugin.selfTest(function() {
-  console.log('SELF test OK');
-});
 
 
+//let database = initDatabase();
+//todo:
+initDatabase();
+
+/**
+ * DB
+ */
+
+function initDatabase() {
+  return sqlitePlugin.openDatabase({
+    name: 'pomodoro.db',
+    location: 'default',
+    androidDatabaseProvider: 'system'
+  }, function(db) {
+    db.transaction(function(tx) {
+      tx.executeSql('CREATE TABLE IF NOT EXISTS Statistics (`type` INTEGER NOT NULL,`end` INTEGER NOT NULL,`length` INTEGER NOT NULL)');
+    }, function(err) {
+      console.log('Open database ERROR: ' + JSON.stringify(err));
+      db.close();
+    }, function() {
+      db.close();
+      console.log('init close ok');
+    });
+  });
+}
+
+function getLastRecords(type) {
+  //TODO
+  //getting data for the last week only
+  //let weekAgo = new Date().getTime() - 60*60*24*7*1000;
+  //+ ' AND WHERE end > ' + weekAgo
+  sqlitePlugin.openDatabase({
+    name: 'pomodoro.db',
+    location: 'default',
+    androidDatabaseProvider: 'system'
+  }, function(db) {
+    db.transaction(function(tx) {
+      tx.executeSql('SELECT * FROM Statistics WHERE type = ' + type, [],
+        function(ignored, resultSet) {
+          //success
+          console.log(resultSet.rows);
+        });
+    }, function(err) {
+      console.log('Open database ERROR: ' + JSON.stringify(err));
+      db.close();
+    }, function() {
+      db.close();
+      console.log('select close ok');
+    });
+  });
 
 
+  /*
+  let db = sqlitePlugin.openDatabase({
+    name: 'pomodoro.db',
+    location: 'default',
+    androidDatabaseProvider: 'system'
+  });
+
+  db.transaction(function(tx) {
+    tx.executeSql('SELECT * FROM Statistics', [],
+      function(ignored, resultSet) {
+        //success
+        console.log(resultSet.rows);
+      });
+  }, function(error) {
+    // OK to close here:
+    console.log('transaction error: ' + error.message);
+    db.close();
+  }, function() {
+    // OK to close here:
+    console.log('select transaction ok');
+    db.close(function() {
+      console.log('database is closed');
+    });
+  });*/
+}
+function addRecord(type,end,len) {
+  console.log('addRecordIsHere');
+  //type,end,len
 
 
+ /* database.transaction(function(tx) {
+    tx.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [1,2,3]);
+  }, function(error) {
+    console.log('INSERT error: ' + error.message);
+  }, function() {
+    //success
+    console.log('INSERT OK Len:');
+    console.log(len);
+  });*/
+
+  sqlitePlugin.openDatabase({
+    name: 'pomodoro.db',
+    location: 'default',
+    androidDatabaseProvider: 'system'
+  }, function(db) {
+    db.transaction(function(tx) {
+      tx.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [1,2,3]);
+    }, function(err) {
+      console.log('Open database ERROR: ' + JSON.stringify(err));
+      db.close();
+    }, function() {
+      db.close();
+      console.log('insert close ok');
+    });
+  });
+
+
+  /*  database.transaction(function(transaction) {
+    transaction.executeSql('SELECT * FROM Statistics', [],
+      function(ignored, resultSet) {
+        //success
+        console.log(resultSet);
+      });
+  }, function(error) {
+    console.log('SELECT error: ' + error.message);
+  });*/
+  /*
+  let db = sqlitePlugin.openDatabase({name: 'pomodoro.db', location: 'default'});
+  db.transaction(function(tr) {
+    tr.executeSql('SELECT upper(?) AS upperString', ['Test string'], function(tr, rs) {
+      console.log('Got upperString result: ' + rs.rows.item(0).upperString);
+    });
+  });
+*/
+  /*
+  let db = sqlitePlugin.openDatabase({
+    name: 'pomodoro.db',
+    location: 'default',
+    androidDatabaseProvider: 'system'
+  });
+
+  db.transaction(function(tx) {
+    tx.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [1,2,3],
+      function() {
+        //success
+        console.log('insert should be ok');
+      });
+  }, function(error) {
+    // OK to close here:
+    console.log('transaction error: ' + error.message);
+    db.close();
+  }, function() {
+    // OK to close here:
+    console.log('select transaction ok');
+    db.close(function() {
+      console.log('database is closed');
+    });
+  });
+  console.log('addrecordisLEFT2');
+*/
+}
+
+/**
+ * local storage
+ */
+function getSettings(key) {
+  let value = localStorage.getItem(key);
+  if(value){
+    return value;
+  }
+  else {
+    return defaultSettings[key];
+  }
+}
+function setSettings(key, value) {
+  localStorage.setItem(key, value);
+}
+function changeWorkInterval(value) {
+  setSettings('workInterval', value);
+  if(mainTimer)
+  {
+    mainTimer.kill();
+  }
+  clockDisplayWorkingTime();
+  buttonsStanceInit();
+}
+function changeBreakInterval(value) {
+  setSettings('breakInterval', value);
+  if(mainTimer)
+  {
+    mainTimer.kill();
+  }
+  clockDisplayWorkingTime();
+  buttonsStanceInit();
+}
+
+/**
+ * TIMER
+ */
+function startTimer(minutes, oncomplete) {
+  let startTime, timer;
+  //todo: *60
+  let ms = minutes*1000;
+  let obj = {};
+  obj.resume = function() {
+    startTime = new Date().getTime();
+    timer = setInterval(obj.step, 250);
+  };
+  obj.pause = function() {
+    ms = obj.step();
+    clearInterval(timer);
+  };
+  obj.kill = function() {
+    clearInterval(timer);
+    obj.resume = function() {};
+
+    //returning how much time passed
+    let msLeft = Math.max(0,ms-(new Date().getTime()-startTime));
+    let mLeft = Math.floor(msLeft/60000);
+    let mGone= minutes - mLeft;
+
+    mainTimer = null;
+    return mGone;
+  };
+  obj.step = function() {
+    let now = Math.max(0,ms-(new Date().getTime()-startTime));
+    let m = Math.floor(now/60000);
+    let s = Math.floor(now/1000)%60;
+    //add leading zero
+    m = (m < 10 ? '0' : '')+m;
+    s = (s < 10 ? '0' : '')+s;
+    refreshClock(m,s);
+    if( now === 0) {
+      //task done!
+      if(oncomplete) oncomplete();
+      obj.kill();
+    }
+    return now;
+  };
+  obj.resume();
+  return obj;
+}
+function refreshClock(m,s) {
+  mainPage.find('#timerDisplay').set('text', m+':'+s);
+}
+function clockDisplayWorkingTime() {
+  let m =getSettings('workInterval');
+  m = (m < 10 ? '0' : '')+m;
+  mainPage.find('#timerDisplay').set('text', m+':00');
+}
+function startWorking() {
+  //hide Play button, show Pause and Stop buttons
+  buttonsStanceWork();
+  console.log('starting work session');
+  if(mainTimer != null)
+  {
+    mainTimer.kill();
+  }
+
+  //start
+  mainTimer = startTimer(getSettings('workInterval'), function () {
+    finishedWorking();
+  });
+}
+function pauseWorking() {
+  buttonsStancePause();
+  mainTimer.pause();
+}
+function resumeWorking() {
+  buttonsStanceWork();
+  mainTimer.resume();
+}
+function startOverWorking() {
+  if(mainTimer)
+  {
+    mainTimer.kill();
+  }
+  mainTimer = startTimer(getSettings('workInterval'), function () {
+    finishedWorking();
+  });
+}
+function finishedWorking() {
+  //TODO
+  console.log('WORK FINISHED');
+  buttonsStanceWorkFinished();
+  clockDisplayWorkingTime();
+  //saving data
+  let end = new Date().getTime();
+  addRecord(TYPE_WORK,end,getSettings('workInterval'));
+}
+function startBreak() {
+  buttonsStanceBreak();
+  console.log('starting a break');
+  if(mainTimer != null)
+  {
+    mainTimer.kill();
+  }
+  //start
+  mainTimer = startTimer(getSettings('breakInterval'), function () {
+    finishedBreak();
+  });
+
+}
+function pauseBreak() {
+  buttonsStancePauseBreak();
+  mainTimer.pause();
+}
+function resumeBreak() {
+  buttonsStanceBreak();
+  mainTimer.resume();
+}
+function finishedBreak() {
+  //TODO
+  console.log('BREAK FINISHED');
+  //timer is killed, it's time to bring home page back to initial view - ready to start work session
+  clockDisplayWorkingTime();
+  buttonsStanceInit();
+  //saving data
+  let end = new Date().getTime();
+  addRecord(TYPE_BREAK,end,getSettings('breakInterval'));
+}
+function forceFinishBreak() {
+  let timePassed = mainTimer.kill();
+  clockDisplayWorkingTime();
+  buttonsStanceInit();
+  //saving data
+  let end = new Date().getTime();
+  addRecord(TYPE_BREAK, end, timePassed);
+}
+
+/**
+ * BUTTONS
+ */
+function buttonsStanceInit() {
+  mainPage.find('#timerButtonGroup').set('visible', true);
+  mainPage.find('#finishButtonGroup').set('visible', false);
+  mainPage.find('#breakButtonGroup').set('visible', false);
+
+  mainPage.find('#playButton').set('visible', true);
+  mainPage.find('#stopButton').set('visible', false);
+  mainPage.find('#resumeButton').set('visible', false);
+  mainPage.find('#pauseButton').set('visible', false);
+}
+function buttonsStanceBreak() {
+  mainPage.find('#breakButtonGroup').set('visible', true);
+  mainPage.find('#timerButtonGroup').set('visible', false);
+  mainPage.find('#pauseBreakButton').set('visible', true);
+  mainPage.find('#resumeBreakButton').set('visible', false);
+}
+function buttonsStanceWork() {
+  mainPage.find('#breakButtonGroup').set('visible', false);
+  mainPage.find('#playButton').set('visible', false);
+  mainPage.find('#resumeButton').set('visible', false);
+  mainPage.find('#stopButton').set('visible', true);
+  mainPage.find('#pauseButton').set('visible', true);
+}
+function buttonsStancePause() {
+  mainPage.find('#playButton').set('visible', false);
+  mainPage.find('#resumeButton').set('visible', true);
+  mainPage.find('#stopButton').set('visible', true);
+  mainPage.find('#pauseButton').set('visible', false);
+}
+function buttonsStancePauseBreak() {
+  mainPage.find('#pauseBreakButton').set('visible', false);
+  mainPage.find('#resumeBreakButton').set('visible', true);
+}
+function buttonsStanceWorkFinished(){
+  mainPage.find('#finishButtonGroup').set('visible', true);
+  mainPage.find('#timerButtonGroup').set('visible', false);
+}
+
+/**
+ * PAGES
+ */
 function mainPageContent() {
   //timer button group - play, pause, stop and resume buttons
   let timerButtonGroup = new Composite({
     id:'timerButtonGroup',
     left: 0, bottom: 0, right: 0,
-    background: bgColor,
+    background: BG_COLOR,
   }).appendTo(mainPage);
 
   new Button({
@@ -103,7 +461,7 @@ function mainPageContent() {
     id:'finishButtonGroup',
     left: 0, bottom: 0, right: 0,
     visible: false,
-    background: bgColor,
+    background: BG_COLOR,
   }).appendTo(mainPage);
 
   new Button({
@@ -128,6 +486,47 @@ function mainPageContent() {
   }).on('select', () => startBreak())
     .appendTo(finishButtonGroup);
 
+  //New task and Break buttons appearing after finishing the task
+  let breakButtonGroup = new Composite({
+    id:'breakButtonGroup',
+    left: 0, bottom: 0, right: 0,
+    visible: false,
+    background: BG_COLOR,
+  }).appendTo(mainPage);
+
+  new Button({
+    id:'resumeBreakButton',
+    left: '15%',
+    top: 16,
+    bottom: 20,
+    text:'Resume break',
+    visible: false,
+    image: {src: 'images/play-button.png', width: 16, height: 16}
+  }).on('select', () => resumeBreak())
+    .appendTo(breakButtonGroup);
+
+  new Button({
+    id:'pauseBreakButton',
+    left: '15%',
+    top: 16,
+    bottom: 20,
+    text:'Pause break',
+    visible: true,
+    image: {src: 'images/pause-button.png', width: 16, height: 16}
+  }).on('select', () => pauseBreak())
+    .appendTo(breakButtonGroup);
+
+  new Button({
+    id:'finishBreakButton',
+    right: '15%',
+    top: 16,
+    bottom: 20,
+    text:'Finish break',
+    visible: true,
+    image: {src: 'images/stop-button.png', width: 16, height: 16}
+  }).on('select', () => forceFinishBreak())
+    .appendTo(breakButtonGroup);
+
   //main timer clocks
   new TextView({
     id:'timerDisplay',
@@ -136,124 +535,6 @@ function mainPageContent() {
     alignment: 'center'
   }).appendTo(mainPage);
 }
-
-
-function startTimer(seconds, oncomplete) {
-  let startTime, timer;
-  let ms = seconds*1000;
-  let obj = {};
-  obj.resume = function() {
-    startTime = new Date().getTime();
-    timer = setInterval(obj.step, 250);
-  };
-  obj.pause = function() {
-    ms = obj.step();
-    clearInterval(timer);
-  };
-  obj.step = function() {
-    let now = Math.max(0,ms-(new Date().getTime()-startTime));
-    let m = Math.floor(now/60000);
-    let s = Math.floor(now/1000)%60;
-    //add leading zero
-    m = (m < 10 ? '0' : '')+m;
-    s = (s < 10 ? '0' : '')+s;
-    refreshClock(m,s);
-    if( now === 0) {
-      clearInterval(timer);
-      obj.resume = function() {};
-      if( oncomplete) oncomplete();
-    }
-    return now;
-  };
-  obj.startOver = function() {
-    obj.resume = function() {};
-    clearInterval(timer);
-    return null;
-  };
-  obj.resume();
-  return obj;
-}
-function refreshClock(m,s) {
-  mainPage.find('#timerDisplay').set('text', m+':'+s);
-}
-function clockDisplayWorkingTime() {
-  let m = Math.floor(appSettings.workInterval/60);
-  let s = Math.floor(appSettings.workInterval % 60);
-  mainPage.find('#timerDisplay').set('text', m+':'+s);
-}
-
-function startWorking() {
-  //hide Play button, show Pause and Stop buttons
-  buttonsStanceWork();
-
-  if(workTimer != null)
-  {
-    //resume
-    workTimer.resume();
-  }
-  else
-  {
-    //start
-    workTimer = startTimer(appSettings.workInterval, function () {
-      finishedWorking();
-    });
-  }
-}
-
-function pauseWorking() {
-  buttonsStancePause();
-  workTimer.pause();
-}
-
-function resumeWorking() {
-  buttonsStanceWork();
-  workTimer.resume();
-}
-
-function startOverWorking() {
-  workTimer.startOver();
-  workTimer = startTimer(appSettings.workInterval, function () {
-    finishedWorking();
-  });
-}
-
-function finishedWorking() {
-  buttonsStanceWorkFinished();
-  clockDisplayWorkingTime();
-}
-
-function startBreak() {
-//todo
-}
-
-function stopBreak() {
-  clockDisplayWorkingTime();
-  //todo
-}
-
-function buttonsStanceWork() {
-  mainPage.find('#playButton').set('visible', false);
-  mainPage.find('#resumeButton').set('visible', false);
-  mainPage.find('#stopButton').set('visible', true);
-  mainPage.find('#pauseButton').set('visible', true);
-}
-
-function buttonsStancePause() {
-  mainPage.find('#playButton').set('visible', false);
-  mainPage.find('#resumeButton').set('visible', true);
-  mainPage.find('#stopButton').set('visible', true);
-  mainPage.find('#pauseButton').set('visible', false);
-}
-
-function buttonsStanceWorkFinished(){
-  mainPage.find('#finishButtonGroup').set('visible', true);
-  mainPage.find('#timerButtonGroup').set('visible', false);
-}
-
-/**
- * PAGES
- */
-
 function pageAbout() {
   drawer.close();
   //creating page
@@ -261,6 +542,7 @@ function pageAbout() {
     title: 'About'
   }).appendTo(navigationView);
   //new element on the page
+  //todo
   new Button({
     left: 16, top: 16, right: 16,
     text: 'Go back'
@@ -268,7 +550,6 @@ function pageAbout() {
     .appendTo(page);
   //return page;
 }
-
 function pageStatistics() {
   drawer.close();
   //creating page
@@ -276,14 +557,14 @@ function pageStatistics() {
     title: 'Statistics'
   }).appendTo(navigationView);
   //new element on the page
+  //todo
   new Button({
     left: 16, top: 16, right: 16,
-    text: 'Go back'
-  }).on('select', () => page.dispose())
+    text: 'Get stufff'
+  }).on('select', () => getLastRecords(1))
     .appendTo(page);
   //return page;
 }
-
 function pageSettings() {
   drawer.close();
   //creating page
@@ -301,12 +582,12 @@ function pageSettings() {
 
   let workLenComposite = new Composite({
     left: 10, top: 'prev() 10', right: 10,
-    background: bgColor,
+    background: BG_COLOR,
   }).appendTo(page);
 
   let workLen = new TextView({
     right: 0,
-    text: 'todo min',
+    text: getSettings('workInterval') + ' min',
     alignment: 'right'
   }).appendTo(workLenComposite);
 
@@ -314,10 +595,12 @@ function pageSettings() {
     left: 0,
     minimum: 1,
     right:'next() 60',
-    selection: 1,
+    selection: getSettings('workInterval'),
     maximum: 60
-  }).on('selectionChanged', ({value}) => workLen.text = value+' min')
-    .appendTo(workLenComposite);
+  }).on('selectionChanged', ({value}) => {
+    changeWorkInterval(value);
+    workLen.text = value+' min';
+  }).appendTo(workLenComposite);
 
   //Break length
   new TextView({
@@ -329,12 +612,12 @@ function pageSettings() {
 
   let breakLenComposite = new Composite({
     left: 10, top: 'prev() 10', right: 10,
-    background: bgColor,
+    background: BG_COLOR,
   }).appendTo(page);
 
   let breakLen = new TextView({
     right: 0,
-    text: 'todo min',
+    text: getSettings('breakInterval') + ' min',
     alignment: 'right'
   }).appendTo(breakLenComposite);
 
@@ -342,10 +625,12 @@ function pageSettings() {
     left: 0,
     minimum: 1,
     right:'next() 60',
-    selection: 1,
+    selection: getSettings('breakInterval'),
     maximum: 15
-  }).on('selectionChanged', ({value}) => breakLen.text = value+' min')
-    .appendTo(breakLenComposite);
+  }).on('selectionChanged', ({value}) => {
+    changeBreakInterval(value);
+    breakLen.text = value+' min';
+  }).appendTo(breakLenComposite);
 
 
   //After work session
@@ -358,24 +643,30 @@ function pageSettings() {
 
   let finishedComposite = new Composite({
     left: 10, top: 'prev() 10', right: 10,
-    background: bgColor,
+    background: BG_COLOR,
   }).appendTo(page);
 
   new ToggleButton({
     left: 0, top: 0,
-    text: 'todo on',
-    checked: true
-  }).on('checkedChanged', event => event.target.text = event.value ? 'Vibration on' : 'Vibration off')
-    .appendTo(finishedComposite);
+    //boolean value returned from the localStorage is going to be string
+    text: getSettings('vibration') === 'true' ? 'Vibration on' : 'Vibration off',
+    checked: getSettings('vibration') === 'true'
+  }).on('checkedChanged', (event) => {
+    event.target.text = event.value ? 'Vibration on' : 'Vibration off';
+    setSettings('vibration', event.value);
+    console.log(typeof event.value);
+  }).appendTo(finishedComposite);
 
   new ToggleButton({
     left: 'prev() 10', top: 0,
-    text: 'todo on',
-    checked: true,
-  }).on('checkedChanged', event => event.target.text = event.value ? 'Sound signal on' : 'Sound signal off')
-    .appendTo(finishedComposite);
+    text: getSettings('sound') === 'true' ? 'Sound signal on' : 'Sound signal off',
+    checked: getSettings('sound') === 'true'
+  }).on('checkedChanged', (event) => {
+    event.target.text = event.value ? 'Sound signal on' : 'Sound signal off';
+    setSettings('sound', event.value);
+    console.log(typeof event.value);
+  }).appendTo(finishedComposite);
 }
-
 function drawerContent() {
   new Button({
     left: 16, top: 16, right: 16,
@@ -393,4 +684,5 @@ function drawerContent() {
   }).on('select', () => pageAbout())
     .appendTo(drawer);
 }
+
 
