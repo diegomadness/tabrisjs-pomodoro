@@ -17,6 +17,7 @@ drawer.enabled = true;
 //filling drawer with navigation buttons
 drawerContent();
 
+console.log('I should have another sqlite plugin');
 //top menu
 let navigationView = new NavigationView({
   left: 0,
@@ -39,7 +40,7 @@ clockDisplayWorkingTime();
 
 //let database = initDatabase();
 //todo:
-initDatabase();
+//initDatabase();
 
 /**
  * DB
