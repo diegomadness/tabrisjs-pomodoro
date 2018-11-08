@@ -8,6 +8,6 @@
     vnezapno
   </author>
   <preference name="EnableDeveloperConsole" value="$IS_DEBUG" />
-  <plugin name="cordova-sqlite-storage" spec="^2.3.0" />
+  <plugin name="cordova-plugin-sqlite-2"/>
 </widget>
 
