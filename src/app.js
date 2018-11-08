@@ -17,7 +17,7 @@ drawer.enabled = true;
 //filling drawer with navigation buttons
 drawerContent();
 
-console.log('I should have another sqlite plugin');
+console.log('v 0.3');
 //top menu
 let navigationView = new NavigationView({
   left: 0,
@@ -38,158 +38,47 @@ clockDisplayWorkingTime();
 
 
 
-//let database = initDatabase();
-//todo:
-//initDatabase();
+let database = initDatabase();
+
 
 /**
  * DB
  */
 
 function initDatabase() {
-  return sqlitePlugin.openDatabase({
-    name: 'pomodoro.db',
-    location: 'default',
-    androidDatabaseProvider: 'system'
-  }, function(db) {
-    db.transaction(function(tx) {
-      tx.executeSql('CREATE TABLE IF NOT EXISTS Statistics (`type` INTEGER NOT NULL,`end` INTEGER NOT NULL,`length` INTEGER NOT NULL)');
-    }, function(err) {
-      console.log('Open database ERROR: ' + JSON.stringify(err));
-      db.close();
-    }, function() {
-      db.close();
-      console.log('init close ok');
+  let db = sqlitePlugin.openDatabase('pomodoro.db', '1.0', '', 1);
+  db.transaction(function (txn) {
+    txn.executeSql('CREATE TABLE IF NOT EXISTS `Statistics` (`type` INTEGER NOT NULL,`end` TEXT NOT NULL,`length` INTEGER NOT NULL)', [], function (tx, res) {
+      console.log('created the table if not existed.');
     });
   });
+
+  return db;
 }
 
 function getLastRecords(type) {
-  //TODO
+  console.log('type:' + type);
   //getting data for the last week only
   //let weekAgo = new Date().getTime() - 60*60*24*7*1000;
   //+ ' AND WHERE end > ' + weekAgo
-  sqlitePlugin.openDatabase({
-    name: 'pomodoro.db',
-    location: 'default',
-    androidDatabaseProvider: 'system'
-  }, function(db) {
-    db.transaction(function(tx) {
-      tx.executeSql('SELECT * FROM Statistics WHERE type = ' + type, [],
-        function(ignored, resultSet) {
-          //success
-          console.log(resultSet.rows);
-        });
-    }, function(err) {
-      console.log('Open database ERROR: ' + JSON.stringify(err));
-      db.close();
-    }, function() {
-      db.close();
-      console.log('select close ok');
+  database.transaction(function (txn) {
+    txn.executeSql('SELECT * FROM `Statistics`', [], function (tx, res) {
+      for (let i = 0; i < res.rows.length; i++) {
+        console.log(res.rows.item(i));
+      }
     });
   });
-
-
-  /*
-  let db = sqlitePlugin.openDatabase({
-    name: 'pomodoro.db',
-    location: 'default',
-    androidDatabaseProvider: 'system'
-  });
-
-  db.transaction(function(tx) {
-    tx.executeSql('SELECT * FROM Statistics', [],
-      function(ignored, resultSet) {
-        //success
-        console.log(resultSet.rows);
-      });
-  }, function(error) {
-    // OK to close here:
-    console.log('transaction error: ' + error.message);
-    db.close();
-  }, function() {
-    // OK to close here:
-    console.log('select transaction ok');
-    db.close(function() {
-      console.log('database is closed');
-    });
-  });*/
 }
+
 function addRecord(type,end,len) {
-  console.log('addRecordIsHere');
-  //type,end,len
-
-
- /* database.transaction(function(tx) {
-    tx.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [1,2,3]);
-  }, function(error) {
-    console.log('INSERT error: ' + error.message);
-  }, function() {
-    //success
-    console.log('INSERT OK Len:');
-    console.log(len);
-  });*/
-
-  sqlitePlugin.openDatabase({
-    name: 'pomodoro.db',
-    location: 'default',
-    androidDatabaseProvider: 'system'
-  }, function(db) {
-    db.transaction(function(tx) {
-      tx.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [1,2,3]);
-    }, function(err) {
-      console.log('Open database ERROR: ' + JSON.stringify(err));
-      db.close();
-    }, function() {
-      db.close();
-      console.log('insert close ok');
+  database.transaction(function (txn) {
+    txn.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [type, end, len], function (tx, res) {
+      //console.log(res.rows);
+      console.log('Inserted records');
     });
   });
-
-
-  /*  database.transaction(function(transaction) {
-    transaction.executeSql('SELECT * FROM Statistics', [],
-      function(ignored, resultSet) {
-        //success
-        console.log(resultSet);
-      });
-  }, function(error) {
-    console.log('SELECT error: ' + error.message);
-  });*/
-  /*
-  let db = sqlitePlugin.openDatabase({name: 'pomodoro.db', location: 'default'});
-  db.transaction(function(tr) {
-    tr.executeSql('SELECT upper(?) AS upperString', ['Test string'], function(tr, rs) {
-      console.log('Got upperString result: ' + rs.rows.item(0).upperString);
-    });
-  });
-*/
-  /*
-  let db = sqlitePlugin.openDatabase({
-    name: 'pomodoro.db',
-    location: 'default',
-    androidDatabaseProvider: 'system'
-  });
-
-  db.transaction(function(tx) {
-    tx.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [1,2,3],
-      function() {
-        //success
-        console.log('insert should be ok');
-      });
-  }, function(error) {
-    // OK to close here:
-    console.log('transaction error: ' + error.message);
-    db.close();
-  }, function() {
-    // OK to close here:
-    console.log('select transaction ok');
-    db.close(function() {
-      console.log('database is closed');
-    });
-  });
-  console.log('addrecordisLEFT2');
-*/
+  getLastRecords(1);
+  //getLastRecords(2);
 }
 
 /**
