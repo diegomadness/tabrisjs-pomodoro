@@ -1,5 +1,7 @@
-const {Composite, Button, TextView, NavigationView, Page, Slider,ToggleButton, ui} = require('tabris');
-const BG_COLOR = '#ffffff';
+const {Composite, Button, TextView, NavigationView, Page, Slider, ui} = require('tabris');
+const ChartComposite = require('./ChartComposite');
+const moment = require('moment');
+
 const TYPE_WORK = 1;
 const TYPE_BREAK = 2;
 
@@ -10,6 +12,15 @@ const defaultSettings = {
   sound:false
 };
 let mainTimer = null;
+let dbDataset = 0;
+let database = null;
+
+/**
+ * Boot
+ */
+
+//connecting to the db
+initDatabase();
 
 // Enable the drawer - left slide menu
 let drawer = ui.drawer;
@@ -17,7 +28,6 @@ drawer.enabled = true;
 //filling drawer with navigation buttons
 drawerContent();
 
-console.log('v 0.3');
 //top menu
 let navigationView = new NavigationView({
   left: 0,
@@ -37,48 +47,40 @@ mainPageContent();
 clockDisplayWorkingTime();
 
 
-
-let database = initDatabase();
-
-
 /**
  * DB
  */
-
 function initDatabase() {
-  let db = sqlitePlugin.openDatabase('pomodoro.db', '1.0', '', 1);
-  db.transaction(function (txn) {
+  database = sqlitePlugin.openDatabase('pomodoro.db', '1.0', '', 1);
+  database.transaction(function (txn) {
     txn.executeSql('CREATE TABLE IF NOT EXISTS `Statistics` (`type` INTEGER NOT NULL,`end` TEXT NOT NULL,`length` INTEGER NOT NULL)', [], function (tx, res) {
       console.log('created the table if not existed.');
     });
   });
-
-  return db;
+  //refresh stats
+  loadStats();
 }
-
-function getLastRecords(type) {
-  console.log('type:' + type);
+function loadStats() {
   //getting data for the last week only
-  //let weekAgo = new Date().getTime() - 60*60*24*7*1000;
-  //+ ' AND WHERE end > ' + weekAgo
+  let weekAgo = new Date().getTime() - 60*60*24*7*1000;
+
   database.transaction(function (txn) {
-    txn.executeSql('SELECT * FROM `Statistics`', [], function (tx, res) {
-      for (let i = 0; i < res.rows.length; i++) {
-        console.log(res.rows.item(i));
-      }
+    txn.executeSql('SELECT * FROM `Statistics` WHERE end > "'  + weekAgo+'"', [], function (tx, res) {
+      dbDataset = res.rows;
+      //take a look on the results from db
+      //console.log('select results:');
+      //console.log(dbDataset);
     });
   });
 }
-
 function addRecord(type,end,len) {
   database.transaction(function (txn) {
     txn.executeSql('INSERT INTO Statistics VALUES (?,?,?)', [type, end, len], function (tx, res) {
-      //console.log(res.rows);
-      console.log('Inserted records');
+      //console.log('insert ok');
     });
   });
-  getLastRecords(1);
-  //getLastRecords(2);
+  //refresh statistics
+  loadStats();
 }
 
 /**
@@ -172,7 +174,6 @@ function clockDisplayWorkingTime() {
 function startWorking() {
   //hide Play button, show Pause and Stop buttons
   buttonsStanceWork();
-  console.log('starting work session');
   if(mainTimer != null)
   {
     mainTimer.kill();
@@ -192,6 +193,7 @@ function resumeWorking() {
   mainTimer.resume();
 }
 function startOverWorking() {
+  buttonsStanceWork();
   if(mainTimer)
   {
     mainTimer.kill();
@@ -201,8 +203,6 @@ function startOverWorking() {
   });
 }
 function finishedWorking() {
-  //TODO
-  console.log('WORK FINISHED');
   buttonsStanceWorkFinished();
   clockDisplayWorkingTime();
   //saving data
@@ -211,7 +211,6 @@ function finishedWorking() {
 }
 function startBreak() {
   buttonsStanceBreak();
-  console.log('starting a break');
   if(mainTimer != null)
   {
     mainTimer.kill();
@@ -231,8 +230,6 @@ function resumeBreak() {
   mainTimer.resume();
 }
 function finishedBreak() {
-  //TODO
-  console.log('BREAK FINISHED');
   //timer is killed, it's time to bring home page back to initial view - ready to start work session
   clockDisplayWorkingTime();
   buttonsStanceInit();
@@ -266,6 +263,7 @@ function buttonsStanceBreak() {
   mainPage.find('#breakButtonGroup').set('visible', true);
   mainPage.find('#timerButtonGroup').set('visible', false);
   mainPage.find('#pauseBreakButton').set('visible', true);
+  mainPage.find('#finishButtonGroup').set('visible', false);
   mainPage.find('#resumeBreakButton').set('visible', false);
 }
 function buttonsStanceWork() {
@@ -274,6 +272,8 @@ function buttonsStanceWork() {
   mainPage.find('#resumeButton').set('visible', false);
   mainPage.find('#stopButton').set('visible', true);
   mainPage.find('#pauseButton').set('visible', true);
+  mainPage.find('#finishButtonGroup').set('visible', false);
+  mainPage.find('#timerButtonGroup').set('visible', true);
 }
 function buttonsStancePause() {
   mainPage.find('#playButton').set('visible', false);
@@ -293,12 +293,28 @@ function buttonsStanceWorkFinished(){
 /**
  * PAGES
  */
+function drawerContent() {
+  new Button({
+    left: 16, top: 16, right: 16,
+    text: 'Statistics'
+  }).on('select', () => pageStatistics())
+    .appendTo(drawer);
+  new Button({
+    left: 16, top: 'prev() 16', right: 16,
+    text: 'Settings'
+  }).on('select', () => pageSettings())
+    .appendTo(drawer);
+  new Button({
+    left: 16, top: 'prev() 16', right: 16,
+    text: 'About'
+  }).on('select', () => pageAbout())
+    .appendTo(drawer);
+}
 function mainPageContent() {
   //timer button group - play, pause, stop and resume buttons
   let timerButtonGroup = new Composite({
     id:'timerButtonGroup',
     left: 0, bottom: 0, right: 0,
-    background: BG_COLOR,
   }).appendTo(mainPage);
 
   new Button({
@@ -351,7 +367,6 @@ function mainPageContent() {
     id:'finishButtonGroup',
     left: 0, bottom: 0, right: 0,
     visible: false,
-    background: BG_COLOR,
   }).appendTo(mainPage);
 
   new Button({
@@ -381,7 +396,6 @@ function mainPageContent() {
     id:'breakButtonGroup',
     left: 0, bottom: 0, right: 0,
     visible: false,
-    background: BG_COLOR,
   }).appendTo(mainPage);
 
   new Button({
@@ -432,13 +446,12 @@ function pageAbout() {
     title: 'About'
   }).appendTo(navigationView);
   //new element on the page
-  //todo
+  //todo: add actual content to the page
   new Button({
     left: 16, top: 16, right: 16,
     text: 'Go back'
   }).on('select', () => page.dispose())
     .appendTo(page);
-  //return page;
 }
 function pageStatistics() {
   drawer.close();
@@ -446,14 +459,32 @@ function pageStatistics() {
   let page = new Page({
     title: 'Statistics'
   }).appendTo(navigationView);
+
+  //refresh chart data
+  getChartData();
+  new TextView({
+    top: 16,
+    left: 16,
+    right: 16,
+    text: 'Weekly progress report',
+    font:'18px bold',
+    alignment: 'left'
+  }).appendTo(page);
+
+  new TextView({
+    top: 'prev() 16',
+    left: 16,
+    right: 16,
+    text: 'You have completed '+ totalWorkCount +' work sessions with a total duration of '+totalWorkTime+' minutes '+
+    'and '+totalBreakCount+' break sessions with a total duration of '+totalBreakTime+' minutes',
+    alignment: 'left'
+  }).appendTo(page);
+
   //new element on the page
-  //todo
-  new Button({
-    left: 16, top: 16, right: 16,
-    text: 'Get stufff'
-  }).on('select', () => getLastRecords(1))
-    .appendTo(page);
-  //return page;
+  new ChartComposite({
+    chart:{type: 'Bar', data: chartData},
+    left: 0, top: 'prev() 0', right: 0, bottom: 0
+  }).appendTo(page);
 }
 function pageSettings() {
   drawer.close();
@@ -472,7 +503,6 @@ function pageSettings() {
 
   let workLenComposite = new Composite({
     left: 10, top: 'prev() 10', right: 10,
-    background: BG_COLOR,
   }).appendTo(page);
 
   let workLen = new TextView({
@@ -502,7 +532,6 @@ function pageSettings() {
 
   let breakLenComposite = new Composite({
     left: 10, top: 'prev() 10', right: 10,
-    background: BG_COLOR,
   }).appendTo(page);
 
   let breakLen = new TextView({
@@ -521,58 +550,87 @@ function pageSettings() {
     changeBreakInterval(value);
     breakLen.text = value+' min';
   }).appendTo(breakLenComposite);
-
-
-  //After work session
-  new TextView({
-    top:'prev() 10',
-    left: 10,
-    text: 'After work session is finished',
-    alignment: 'left'
-  }).appendTo(page);
-
-  let finishedComposite = new Composite({
-    left: 10, top: 'prev() 10', right: 10,
-    background: BG_COLOR,
-  }).appendTo(page);
-
-  new ToggleButton({
-    left: 0, top: 0,
-    //boolean value returned from the localStorage is going to be string
-    text: getSettings('vibration') === 'true' ? 'Vibration on' : 'Vibration off',
-    checked: getSettings('vibration') === 'true'
-  }).on('checkedChanged', (event) => {
-    event.target.text = event.value ? 'Vibration on' : 'Vibration off';
-    setSettings('vibration', event.value);
-    console.log(typeof event.value);
-  }).appendTo(finishedComposite);
-
-  new ToggleButton({
-    left: 'prev() 10', top: 0,
-    text: getSettings('sound') === 'true' ? 'Sound signal on' : 'Sound signal off',
-    checked: getSettings('sound') === 'true'
-  }).on('checkedChanged', (event) => {
-    event.target.text = event.value ? 'Sound signal on' : 'Sound signal off';
-    setSettings('sound', event.value);
-    console.log(typeof event.value);
-  }).appendTo(finishedComposite);
-}
-function drawerContent() {
-  new Button({
-    left: 16, top: 16, right: 16,
-    text: 'Statistics'
-  }).on('select', () => pageStatistics())
-    .appendTo(drawer);
-  new Button({
-    left: 16, top: 'prev() 16', right: 16,
-    text: 'Settings'
-  }).on('select', () => pageSettings())
-    .appendTo(drawer);
-  new Button({
-    left: 16, top: 'prev() 16', right: 16,
-    text: 'About'
-  }).on('select', () => pageAbout())
-    .appendTo(drawer);
 }
 
+/**
+ * PRODUCTIVITY CHART FOR THE STATISTICS PAGE
+ */
+//default chart data for empty graph
+let workData = [0,0,0,0,0,0,0];
+let breakData = [0,0,0,0,0,0,0];
+let chartData = {
+  labels: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  datasets: [
+    {
+      'label': 'Work time',
+      'fillColor': 'rgba(220,220,220,0.2)',
+      'strokeColor': 'rgba(220,220,220,1)',
+      'pointColor': 'rgba(220,220,220,1)',
+      'pointStrokeColor': '#fff',
+      'pointHighlightFill': '#fff',
+      'pointHighlightStroke': 'rgba(220,220,220,1)',
+      'data': workData
+    },
+    {
+      'label': 'Break time',
+      'fillColor': 'rgba(151,187,205,0.2)',
+      'strokeColor': 'rgba(151,187,205,1)',
+      'pointColor': 'rgba(151,187,205,1)',
+      'pointStrokeColor': '#fff',
+      'pointHighlightFill': '#fff',
+      'pointHighlightStroke': 'rgba(151,187,205,1)',
+      'data': breakData
+    }
+  ]
+};
+//stats
+let totalBreakCount = 0;
+let totalWorkCount = 0;
+let totalBreakTime = 0;
+let totalWorkTime = 0;
 
+function getChartData(){
+
+  let labels = getChartLabels();
+
+  //get records from db
+  loadStats();
+  //just in case
+  if(dbDataset == 0) {
+    //empty graph
+    return;
+  }
+
+  //separate breaks from work sessions and assign them to the week days
+  for (let i = 0; i < dbDataset.length; i++) {
+    let record = dbDataset.item(i);
+    let endDay = moment(parseInt(record.end)).format('dddd');
+    let index = labels.findIndex(function(element, index, array) {
+      return this == element;
+    }, endDay);
+
+    if(record.type == TYPE_BREAK)
+    {
+      //break session
+      totalBreakCount++;
+      totalBreakTime = totalBreakTime + record.length;
+      breakData[index] = breakData[index] + record.length;
+    }
+    else
+    {
+      //work session
+      totalWorkCount++;
+      totalWorkTime = totalWorkTime + record.length;
+      workData[index] = workData[index] + record.length;
+    }
+  }
+}
+function getChartLabels(){
+  let labels = [];
+  //get labels
+  for (let i = 0; i < 7; i++) {
+    labels.unshift(moment().subtract(i, 'day').format('dddd'));
+  }
+  chartData.labels = labels;
+  return labels;
+}
