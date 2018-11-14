@@ -92,10 +92,10 @@ module.exports = class StatisticsPage extends Page {
       let record = appData.dbDataset.item(i);
       let endDay = moment(parseInt(record.end)).format('dddd');
       let index = labels.findIndex(function (element) {
-        return this == element;
+        return this === element;
       }, endDay);
 
-      if (record.type == appData.database.TYPE_BREAK) {
+      if (record.type === appData.database.TYPE_BREAK) {
         //break session
         this.totalBreakCount++;
         this.totalBreakTime = this.totalBreakTime + record.length;
