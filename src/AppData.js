@@ -9,8 +9,7 @@ class AppData {
   }
   //values from localStorage
   set workInterval(value) {
-    //todo:
-    //this._storage.set('workInterval', value);
+    this._storage.setItem('workInterval', value);
     if(timer.active)
     {
       timer.kill();
@@ -19,8 +18,7 @@ class AppData {
     this.mainPage.buttonsStanceInit();
   }
   set breakInterval(value) {
-    //todo:
-    //this._storage.set('breakInterval', value);
+    this._storage.setItem('breakInterval', value);
     if(timer.active)
     {
       timer.kill();
@@ -30,18 +28,13 @@ class AppData {
   }
 
   get workInterval() {
-    //todo:
-    //return this._storage.get('workInterval') || 1;
-    return 5;
+    return this._storage.getItem('workInterval') || 1;
   }
   get breakInterval() {
-    //return this._storage.get('breakInterval') || 1;
-    //todo:
-    return 5;
+    return this._storage.getItem('breakInterval') || 1;
   }
 
 }
 
 AppData.appData = new AppData(localStorage);
-
 module.exports = AppData;
