@@ -5,7 +5,7 @@ class Database {
     this._connection = sqlitePlugin.openDatabase('pomodoro.db', '1.0', '', 1);
     this._connection.transaction(function (txn) {
       txn.executeSql('CREATE TABLE IF NOT EXISTS `Statistics` (`type` INTEGER NOT NULL,`end` TEXT NOT NULL,`length` INTEGER NOT NULL)', [], function (tx, res) {
-        console.log('created the table if not existed.');
+        console.log('db ok');
       });
     });
 
@@ -20,7 +20,7 @@ class Database {
   }
 
   static get TYPE_BREAK(){
-    return 1;
+    return 2;
   }
 
   loadStats() {
