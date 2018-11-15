@@ -1,5 +1,5 @@
 const {Button, Page} = require('tabris');
-let appData = require('../AppData');
+const {appData} = require('../AppData');
 
 module.exports = class AboutPage extends Page {
   constructor (properties) {

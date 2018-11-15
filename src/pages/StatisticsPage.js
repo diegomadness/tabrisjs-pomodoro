@@ -1,10 +1,10 @@
 const {TextView, Page} = require('tabris');
-let appData = require('../AppData');
+const {appData} = require('../AppData');
+const {db} = require('../Database');
 const ChartComposite = require('../composites/ChartComposite');
 const moment = require('moment');
 
 module.exports = class StatisticsPage extends Page {
-
   constructor (properties) {
     super(properties);
     this.workData = [0, 0, 0, 0, 0, 0, 0];
@@ -48,7 +48,6 @@ module.exports = class StatisticsPage extends Page {
     this._createUI();
   }
 
-
   _createUI () {
     this.append(
       new TextView({
@@ -73,14 +72,13 @@ module.exports = class StatisticsPage extends Page {
         left: 0, top: 'prev() 0', right: 0, bottom: 0
       })
     );
-
   }
 
   getChartData () {
     let labels = this.getChartLabels();
 
     //get records from db
-    this.loadStats();
+    db.loadStats();
     //just in case
     if (appData.dbDataset === 0) {
       //empty graph
@@ -95,7 +93,7 @@ module.exports = class StatisticsPage extends Page {
         return this === element;
       }, endDay);
 
-      if (record.type === appData.database.TYPE_BREAK) {
+      if (record.type === db.TYPE_BREAK) {
         //break session
         this.totalBreakCount++;
         this.totalBreakTime = this.totalBreakTime + record.length;

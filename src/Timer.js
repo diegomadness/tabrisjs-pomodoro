@@ -1,8 +1,15 @@
-let appData = require('./AppData');
+const {appData} = require('./AppData');
+const {db} = require('./Database');
 
-module.exports = class Timer {
-  constructor (minutes, oncomplete) {
-    appData.mainTimer = this.startTimer(minutes, oncomplete);
+class Timer {
+  constructor () {
+    this._timer = null;
+    console.log('FROM TIMER');
+    console.log(appData);
+  }
+
+  get active(){
+    return this._timer === null;
   }
 
   startTimer(minutes, oncomplete) {
@@ -27,10 +34,13 @@ module.exports = class Timer {
       let mLeft = Math.floor(msLeft/60000);
       let mGone= minutes - mLeft;
 
-      appData.mainTimer = null;
+      this._timer = null;
       return mGone;
     };
+
     obj.step = function() {
+      console.log('FROM TIMER');
+      console.log(appData);
       let now = Math.max(0,ms-(new Date().getTime()-startTime));
       let m = Math.floor(now/60000);
       let s = Math.floor(now/1000)%60;
@@ -46,65 +56,65 @@ module.exports = class Timer {
       return now;
     };
     obj.resume();
-    return obj;
+    this._timer = obj;
   }
   startWorking() {
     //hide Play button, show Pause and Stop buttons
     appData.mainPage.buttonsStanceWork();
-    if(appData.mainTimer != null)
+    if(this._timer != null)
     {
-      appData.mainTimer.kill();
+      this._timer.kill();
     }
 
     //start
-    appData.mainTimer = this.startTimer(appData.workInterval, function () {
+    this._timer = this.startTimer(appData.workInterval, () => {
       this.finishedWorking();
     });
   }
   pauseWorking() {
     appData.mainPage.buttonsStancePause();
-    appData.mainTimer.pause();
+    this._timer.pause();
   }
   resumeWorking() {
     appData.mainPage.buttonsStanceWork();
-    appData.mainTimer.resume();
+    this._timer.resume();
   }
   startOverWorking() {
     appData.mainPage.buttonsStanceWork();
-    if(appData.mainTimer)
+    if(this._timer)
     {
-      appData.mainTimer.kill();
+      this._timer.kill();
     }
-    appData.mainTimer = this.startTimer(appData.workInterval, function () {
+    this._timer = this.startTimer(appData.workInterval, () => {
       this.finishedWorking();
     });
   }
   finishedWorking() {
     appData.mainPage.buttonsStanceWorkFinished();
-    this.clockDisplayWorkingTime();
+    appData.mainPage.clockDisplayWorkingTime();
     //saving data
     let end = new Date().getTime();
-    appData.database.addRecord(appData.database.TYPE_WORK,end,appData.workInterval);
+    db.addRecord(db.TYPE_WORK,end,appData.workInterval);
   }
   startBreak() {
     appData.mainPage.buttonsStanceBreak();
-    if(appData.mainTimer !== null)
+    if(this._timer !== null)
     {
-      appData.mainTimer.kill();
+      this._timer.kill();
     }
     //start
-    appData.mainTimer = this.startTimer(appData.breakInterval, function () {
+    this._timer = this.startTimer(appData.breakInterval, () => {
       this.finishedBreak();
     });
 
   }
   pauseBreak() {
     appData.mainPage.buttonsStancePauseBreak();
-    appData.mainTimer.pause();
+    this._timer.pause();
   }
   resumeBreak() {
     appData.mainPage.buttonsStanceBreak();
-    appData.mainTimer.resume();
+    this._timer.resume();
   }
   finishedBreak() {
     //timer is killed, it's time to bring home page back to initial view - ready to start work session
@@ -112,15 +122,18 @@ module.exports = class Timer {
     appData.mainPage.buttonsStanceInit();
     //saving data
     let end = new Date().getTime();
-    appData.database.addRecord(appData.database.TYPE_BREAK,end,appData.breakInterval);
+    db.addRecord(db.TYPE_BREAK,end,appData.breakInterval);
   }
   forceFinishBreak() {
-    let timePassed = appData.mainTimer.kill();
+    let timePassed = this._timer.kill();
     appData.mainPage.clockDisplayWorkingTime();
     appData.mainPage.buttonsStanceInit();
     //saving data
     let end = new Date().getTime();
-    appData.database.addRecord(appData.database.TYPE_BREAK, end, timePassed);
+    db.addRecord(db.TYPE_BREAK, end, timePassed);
   }
-};
+}
 
+
+Timer.timer = new Timer();
+module.exports = Timer;

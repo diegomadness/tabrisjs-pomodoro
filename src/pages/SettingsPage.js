@@ -1,5 +1,5 @@
 const {Composite, Page, TextView, Slider} = require('tabris');
-let appData = require('../AppData');
+const {appData} = require('../AppData');
 
 module.exports = class SettingsPage extends Page {
   constructor (properties) {
@@ -58,7 +58,7 @@ module.exports = class SettingsPage extends Page {
       alignment: 'right'
     }).appendTo(this.breakLenComposite);
 
-    this.Slider({
+    new Slider({
       left: 0,
       minimum: 1,
       right: 'next() 60',

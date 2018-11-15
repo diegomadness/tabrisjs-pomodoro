@@ -1,11 +1,14 @@
 const {Button, Composite, TextView, Page} = require('tabris');
-let appData = require('../AppData');
+const {appData} = require('../AppData');
+const {timer} = require('../Timer');
 
 module.exports = class HomePage extends Page {
 
   constructor (properties) {
     super(properties);
     this._createUI();
+    console.log('FROM HOMEPAGE');
+    console.log(appData);
   }
 
   _createUI () {
@@ -39,7 +42,7 @@ module.exports = class HomePage extends Page {
       text: 'Start',
       image: {src: 'images/play-button.png', width: 16, height: 16}
     }).on('select', () => {
-      appData.mainTimer.startWorking();
+      timer.startWorking();
     }).appendTo(this._timerButtonGroup);
 
     new Button({
@@ -50,7 +53,7 @@ module.exports = class HomePage extends Page {
       text: 'Pause',
       visible: false,
       image: {src: 'images/pause-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.pauseWorking())
+    }).on('select', () => timer.pauseWorking())
       .appendTo(this._timerButtonGroup);
 
     new Button({
@@ -61,7 +64,7 @@ module.exports = class HomePage extends Page {
       text: 'Resume',
       visible: false,
       image: {src: 'images/play-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.resumeWorking())
+    }).on('select', () => timer.resumeWorking())
       .appendTo(this._timerButtonGroup);
 
     new Button({
@@ -72,7 +75,7 @@ module.exports = class HomePage extends Page {
       text: 'Start over',
       visible: false,
       image: {src: 'images/stop-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.startOverWorking())
+    }).on('select', () => timer.startOverWorking())
       .appendTo(this._timerButtonGroup);
 
     new Button({
@@ -83,7 +86,7 @@ module.exports = class HomePage extends Page {
       text: 'Next task',
       visible: true,
       image: {src: 'images/play-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.startOverWorking())
+    }).on('select', () => timer.startOverWorking())
       .appendTo(this._finishButtonGroup);
 
     new Button({
@@ -94,7 +97,7 @@ module.exports = class HomePage extends Page {
       text: 'Take a break',
       visible: true,
       image: {src: 'images/pause-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.startBreak())
+    }).on('select', () => timer.startBreak())
       .appendTo(this._finishButtonGroup);
 
     new Button({
@@ -105,7 +108,7 @@ module.exports = class HomePage extends Page {
       text: 'Resume break',
       visible: false,
       image: {src: 'images/play-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.resumeBreak())
+    }).on('select', () => timer.resumeBreak())
       .appendTo(this._breakButtonGroup);
 
     new Button({
@@ -116,7 +119,7 @@ module.exports = class HomePage extends Page {
       text: 'Pause break',
       visible: true,
       image: {src: 'images/pause-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.pauseBreak())
+    }).on('select', () => timer.pauseBreak())
       .appendTo(this._breakButtonGroup);
 
     new Button({
@@ -127,7 +130,7 @@ module.exports = class HomePage extends Page {
       text: 'Finish break',
       visible: true,
       image: {src: 'images/stop-button.png', width: 16, height: 16}
-    }).on('select', () => appData.mainTimer.forceFinishBreak())
+    }).on('select', () => timer.forceFinishBreak())
       .appendTo(this._breakButtonGroup);
   }
   //main timer clocks

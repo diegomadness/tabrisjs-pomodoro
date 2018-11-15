@@ -1,22 +1,18 @@
 const {Button, NavigationView, ui} = require('tabris');
+const {appData} = require('./AppData');
 const HomePage = require('./pages/HomePage');
 const StatisticsPage = require('./pages/StatisticsPage');
 const SettingsPage = require('./pages/SettingsPage');
 const AboutPage = require('./pages/AboutPage');
-let appData = require('./AppData');
-const database = require('./Database');
 
 module.exports = class AppBootstrap {
   constructor() {
-    appData.database = database;
-
     // Enable the drawer - left slide menu
     appData.drawer = ui.drawer;
     appData.drawer.enabled = true;
     //filling drawer with navigation buttons
     this._drawerContent();
 
-    console.log(appData);
     //top menu
     this.navigationView = new NavigationView({
       left: 0,
