@@ -1,5 +1,3 @@
-const {timer} = require('./Timer');
-
 class AppData {
   constructor(storage) {
     this._storage = storage;
@@ -10,19 +8,11 @@ class AppData {
   //values from localStorage
   set workInterval(value) {
     this._storage.setItem('workInterval', value);
-    if(timer.active)
-    {
-      timer.kill();
-    }
     this.mainPage.clockDisplayWorkingTime();
     this.mainPage.buttonsStanceInit();
   }
   set breakInterval(value) {
     this._storage.setItem('breakInterval', value);
-    if(timer.active)
-    {
-      timer.kill();
-    }
     this.mainPage.clockDisplayWorkingTime();
     this.mainPage.buttonsStanceInit();
   }

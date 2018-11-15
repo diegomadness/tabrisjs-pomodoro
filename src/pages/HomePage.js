@@ -7,8 +7,6 @@ module.exports = class HomePage extends Page {
   constructor (properties) {
     super(properties);
     this._createUI();
-    console.log('FROM HOMEPAGE');
-    console.log(appData);
   }
 
   _createUI () {

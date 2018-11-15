@@ -2,8 +2,6 @@ const {appData} = require('./AppData');
 
 class Database {
   constructor() {
-    console.log('FROM DB');
-    console.log(appData);
     this._connection = sqlitePlugin.openDatabase('pomodoro.db', '1.0', '', 1);
     this._connection.transaction(function (txn) {
       txn.executeSql('CREATE TABLE IF NOT EXISTS `Statistics` (`type` INTEGER NOT NULL,`end` TEXT NOT NULL,`length` INTEGER NOT NULL)', [], function (tx, res) {
@@ -26,9 +24,6 @@ class Database {
   }
 
   loadStats() {
-    console.log('FROM DB');
-    console.log(appData);
-
     //getting data for the last week only
     let weekAgo = new Date().getTime() - 60*60*24*7*1000;
 

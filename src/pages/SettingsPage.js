@@ -1,5 +1,6 @@
 const {Composite, Page, TextView, Slider} = require('tabris');
 const {appData} = require('../AppData');
+const {timer} = require('../Timer');
 
 module.exports = class SettingsPage extends Page {
   constructor (properties) {
@@ -7,7 +8,6 @@ module.exports = class SettingsPage extends Page {
 
     appData.drawer.close();
     this.title = 'Settings';
-
     this._createUI();
   }
 
@@ -49,6 +49,7 @@ module.exports = class SettingsPage extends Page {
       maximum: 60
     }).on('selectionChanged', ({value}) => {
       appData.workInterval = value;
+      timer.forceRefresh();
       this.workLen.text = value + ' min';
     }).appendTo(this.workLenComposite);
 
@@ -66,6 +67,7 @@ module.exports = class SettingsPage extends Page {
       maximum: 15
     }).on('selectionChanged', ({value}) => {
       appData.breakInterval = value;
+      timer.forceRefresh();
       this.breakLen.text = value + ' min';
     }).appendTo(this.breakLenComposite);
   }

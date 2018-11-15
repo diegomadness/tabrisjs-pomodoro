@@ -4,8 +4,6 @@ const {db} = require('./Database');
 class Timer {
   constructor () {
     this._timer = null;
-    console.log('FROM TIMER');
-    console.log(appData);
   }
 
   get active(){
@@ -39,8 +37,6 @@ class Timer {
     };
 
     obj.step = function() {
-      console.log('FROM TIMER');
-      console.log(appData);
       let now = Math.max(0,ms-(new Date().getTime()-startTime));
       let m = Math.floor(now/60000);
       let s = Math.floor(now/1000)%60;
@@ -67,7 +63,7 @@ class Timer {
     }
 
     //start
-    this._timer = this.startTimer(appData.workInterval, () => {
+    this.startTimer(appData.workInterval, () => {
       this.finishedWorking();
     });
   }
@@ -85,7 +81,7 @@ class Timer {
     {
       this._timer.kill();
     }
-    this._timer = this.startTimer(appData.workInterval, () => {
+    this.startTimer(appData.workInterval, () => {
       this.finishedWorking();
     });
   }
@@ -103,10 +99,9 @@ class Timer {
       this._timer.kill();
     }
     //start
-    this._timer = this.startTimer(appData.breakInterval, () => {
+    this.startTimer(appData.breakInterval, () => {
       this.finishedBreak();
     });
-
   }
   pauseBreak() {
     appData.mainPage.buttonsStancePauseBreak();
@@ -131,6 +126,12 @@ class Timer {
     //saving data
     let end = new Date().getTime();
     db.addRecord(db.TYPE_BREAK, end, timePassed);
+  }
+  forceRefresh()
+  {
+    if (this.active) {
+      this._timer.kill();
+    }
   }
 }
 
