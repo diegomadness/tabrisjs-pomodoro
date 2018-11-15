@@ -9,7 +9,7 @@ class Timer {
   }
 
   get active(){
-    return this._timer === null;
+    return this._timer !== null;
   }
 
   startTimer(minutes, oncomplete) {
