@@ -4,7 +4,7 @@ const Chart = require('chart.js');
 module.exports = class ChartComposite extends Composite {
 
   constructor(properties) {
-    super(Object.assign({}, properties));
+    super(properties);
     this._createUI();
     this._applyLayout();
   }
