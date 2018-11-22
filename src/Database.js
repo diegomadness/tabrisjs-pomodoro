@@ -1,7 +1,6 @@
-const {appData} = require('./AppData');
-
-class Database {
-  constructor () {
+module.exports = class Database {
+  constructor (app) {
+    this._app = app;
     this._connection = sqlitePlugin.openDatabase('pomodoro.db', '1.0', '', 1);
     this._connection.transaction((txn) => {
       txn.executeSql('CREATE TABLE IF NOT EXISTS `Statistics` ' +
@@ -29,7 +28,7 @@ class Database {
 
     this._connection.transaction((txn) => {
       txn.executeSql('SELECT * FROM `Statistics` WHERE end > "' + weekAgo + '"', [], (tx, res) => {
-        appData.dbDataset = res.rows;
+        this._app.appData.dbDataset = res.rows;
       });
     });
   }
@@ -41,8 +40,4 @@ class Database {
     });
     this.loadStats();//refresh statistics
   }
-}
-
-Database.db = new Database();
-
-module.exports = Database;
+};

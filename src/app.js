@@ -1,2 +1,2 @@
-const app = require('./AppBootstrap');
-new app;
+const AppBootstrap = require('./AppBootstrap');
+new AppBootstrap();

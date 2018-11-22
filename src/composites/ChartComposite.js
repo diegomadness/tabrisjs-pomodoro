@@ -21,7 +21,7 @@ module.exports = class ChartComposite extends Composite {
   _createUI () {
     this.append(
       new Button({id: 'drawChartButton', text: 'Productivity graph'})
-        .on('select', () => this._drawChart()),
+        .on({select: () => this._drawChart()}),
       new Composite({id: 'contentBox'})
         .append(new Canvas())
         .on({resize: (event) => this._layoutCanvas(event)})

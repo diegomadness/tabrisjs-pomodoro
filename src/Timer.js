@@ -1,146 +1,143 @@
-const {appData} = require('./AppData');
-const {db} = require('./Database');
-
-class Timer {
-  constructor () {
-    this._timer = null;
+module.exports = class Timer {
+  constructor (app) {
+    this._interval = null;
+    this._app = app;
+    this._minutes = 0;
+    this._ms = 0;
+    this._startTime = 0;
+    this._oncomplete = null;
   }
 
   get active () {
-    return this._timer !== null;
-  }
-
-  startTimer (minutes, oncomplete) {
-    let startTime, timer;
-    //todo: *60
-    let ms = minutes * 1000;
-    let obj = {};
-    obj.resume = function () {
-      startTime = new Date().getTime();
-      timer = setInterval(obj.step, 250);
-    };
-    obj.pause = function () {
-      ms = obj.step();
-      clearInterval(timer);
-    };
-    obj.kill = function () {
-      clearInterval(timer);
-      obj.resume = function () {};
-
-      //returning how much time passed
-      let msLeft = Math.max(0, ms - (new Date().getTime() - startTime));
-      let mLeft = Math.floor(msLeft / 60000);
-      let mGone = minutes - mLeft;
-
-      this._timer = null;
-      return mGone;
-    };
-
-    obj.step = function () {
-      const now = Math.max(0, ms - (new Date().getTime() - startTime));
-      let m = Math.floor(now / 60000);
-      let s = Math.floor(now / 1000) % 60;
-      //add leading zero
-      m = (m < 10 ? '0' : '') + m;
-      s = (s < 10 ? '0' : '') + s;
-      appData.mainPage.refreshClock(m, s);
-      if (now === 0) {
-        //task done!
-        if (oncomplete) oncomplete();
-        obj.kill();
-      }
-      return now;
-    };
-    obj.resume();
-    this._timer = obj;
+    return this._interval !== null;
   }
 
   startWorking () {
     //hide Play button, show Pause and Stop buttons
-    appData.mainPage.buttonsStanceWork();
-    if (this._timer !== null) {
-      this._timer.kill();
-    }
+    this._app.homePage.buttonsStanceWork();
+    this._kill();
 
     //start
-    this.startTimer(appData.workInterval, () => {
+    this.startTimer(this._app.appData.workInterval, () => {
       this.finishedWorking();
     });
   }
 
   pauseWorking () {
-    appData.mainPage.buttonsStancePause();
-    this._timer.pause();
+    this._app.homePage.buttonsStancePause();
+    this._pause();
   }
 
   resumeWorking () {
-    appData.mainPage.buttonsStanceWork();
-    this._timer.resume();
+    this._app.homePage.buttonsStanceWork();
+    this._resume();
   }
 
   startOverWorking () {
-    appData.mainPage.buttonsStanceWork();
-    if (this._timer) {
-      this._timer.kill();
-    }
-    this.startTimer(appData.workInterval, () => {
+    this._app.homePage.buttonsStanceWork();
+    this._kill();
+    this.startTimer(this._app.appData.workInterval, () => {
       this.finishedWorking();
     });
   }
 
   finishedWorking () {
-    appData.mainPage.buttonsStanceWorkFinished();
-    appData.mainPage.clockDisplayWorkingTime();
+    this._app.homePage.buttonsStanceWorkFinished();
+    this._app.homePage.clockDisplayWorkingTime();
     //saving data
     const end = new Date().getTime();
-    db.addRecord(db.TYPE_WORK, end, appData.workInterval);
+    this._app.db.addRecord(this._app.db.TYPE_WORK, end, this._app.appData.workInterval);
   }
 
   startBreak () {
-    appData.mainPage.buttonsStanceBreak();
-    if (this._timer !== null) {
-      this._timer.kill();
-    }
+    this._app.homePage.buttonsStanceBreak();
+    this._kill();
     //start
-    this.startTimer(appData.breakInterval, () => {
+    this.startTimer(this._app.appData.breakInterval, () => {
       this.finishedBreak();
     });
   }
 
   pauseBreak () {
-    appData.mainPage.buttonsStancePauseBreak();
-    this._timer.pause();
+    this._app.homePage.buttonsStancePauseBreak();
+    this._pause();
   }
 
   resumeBreak () {
-    appData.mainPage.buttonsStanceBreak();
-    this._timer.resume();
+    this._app.homePage.buttonsStanceBreak();
+    this._resume();
   }
 
   finishedBreak () {
     //timer is killed, it's time to bring home page back to initial view - ready to start work session
-    appData.mainPage.clockDisplayWorkingTime();
-    appData.mainPage.buttonsStanceInit();
+    this._app.homePage.clockDisplayWorkingTime();
+    this._app.homePage.buttonsStanceInit();
     //saving data
     const end = new Date().getTime();
-    db.addRecord(db.TYPE_BREAK, end, appData.breakInterval);
+    this._app.db.addRecord(this._app.db.TYPE_BREAK, end, this._app.appData.breakInterval);
   }
 
   forceFinishBreak () {
-    const timePassed = this._timer.kill();
-    appData.mainPage.clockDisplayWorkingTime();
-    appData.mainPage.buttonsStanceInit();
+    const timePassed = this._kill();
+    this._app.homePage.clockDisplayWorkingTime();
+    this._app.homePage.buttonsStanceInit();
     //saving data
     const end = new Date().getTime();
-    db.addRecord(db.TYPE_BREAK, end, timePassed);
+    this._app.db.addRecord(this._app.db.TYPE_BREAK, end, timePassed);
   }
 
   forceRefresh () {
+    this._kill();
+  }
+
+  startTimer (minutes, oncomplete = null) {
+    this._minutes = minutes;
+    this._ms = minutes * 60 * 1000;
+    this._oncomplete = oncomplete;
+
+    this._resume();
+  }
+
+  _kill () {
     if (this.active) {
-      this._timer.kill();
+      clearInterval(this._interval);
+
+      //returning how much time passed
+      const msLeft = Math.max(0, this._ms - (new Date().getTime() - this._startTime));
+      const mLeft = Math.floor(msLeft / 60000);
+      const mGone = this._minutes - mLeft;
+
+      this._interval = null;
+      return mGone;
     }
   }
-}
 
-Timer.timer = new Timer();
-module.exports = Timer;
+  _resume () {
+    this._startTime = new Date().getTime();
+    this._interval = setInterval(() => {
+      this._step();
+    }, 250);
+  }
+
+  _step () {
+    const now = Math.max(0, this._ms - (new Date().getTime() - this._startTime));
+    let m = Math.floor(now / 60000);
+    let s = Math.floor(now / 1000) % 60;
+    m = (m < 10 ? '0' : '') + m;
+    s = (s < 10 ? '0' : '') + s;
+    this._app.homePage.refreshClock(m, s);
+    if (now === 0) {//task done
+      if (this._oncomplete) {
+        this._oncomplete();
+      }
+      this._kill();
+    }
+    return now;
+  }
+
+  _pause () {
+    this._ms = this._step();
+    clearInterval(this._interval);
+  }
+};
+

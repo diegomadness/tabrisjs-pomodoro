@@ -1,12 +1,11 @@
 const {TextView, Page} = require('tabris');
-const {appData} = require('../AppData');
-const {db} = require('../Database');
 const ChartComposite = require('../composites/ChartComposite');
 const moment = require('moment');
 
 module.exports = class StatisticsPage extends Page {
-  constructor (properties) {
+  constructor (properties, app) {
     super(properties);
+    this._app = app;
     this.workData = [0, 0, 0, 0, 0, 0, 0];
     this.breakData = [0, 0, 0, 0, 0, 0, 0];
     this.chartData = {
@@ -39,8 +38,7 @@ module.exports = class StatisticsPage extends Page {
     this.totalWorkCount = 0;
     this.totalBreakTime = 0;
     this.totalWorkTime = 0;
-
-    appData.drawer.close();
+    app.drawer.close();
     this.title = 'Statistics';
 
     this.getChartData();//refresh chart data
@@ -48,47 +46,21 @@ module.exports = class StatisticsPage extends Page {
     this._createUI();
   }
 
-  _createUI () {
-    this.append(
-      new TextView({
-        top: 16,
-        left: 16,
-        right: 16,
-        text: 'Weekly progress report',
-        font: '18px bold',
-        alignment: 'left'
-      }),
-      new TextView({
-        top: 'prev() 16',
-        left: 16,
-        right: 16,
-        text: 'You have completed ' + this.totalWorkCount + ' work sessions with a total duration of ' +
-        this.totalWorkTime + ' minutes and ' + this.totalBreakCount + ' break sessions with a total duration of ' +
-        this.totalBreakTime + ' minutes',
-        alignment: 'left'
-      }),
-      new ChartComposite({
-        chart: {type: 'Bar', data: this.chartData},
-        left: 0, top: 'prev() 0', right: 0, bottom: 0
-      })
-    );
-  }
-
   getChartData () {
     const labels = this.getChartLabels();
-    db.loadStats();//get records from db
+    this._app.db.loadStats();//get records from db
 
-    if (appData.dbDataset === 0) {
+    if (this._app.appData.dbDataset === 0) {
       return;//empty graph
     }
 
     //separate breaks from work sessions and assign them to the week days
-    for (let i = 0; i < appData.dbDataset.length; i++) {
-      const record = appData.dbDataset.item(i);
+    for (let i = 0; i < this._app.appData.dbDataset.length; i++) {
+      const record = this._app.appData.dbDataset.item(i);
       const endDay = moment(parseInt(record.end)).format('dddd');
       const index = labels.indexOf(endDay);
 
-      if (record.type === db.TYPE_BREAK) {
+      if (record.type === this._app.db.TYPE_BREAK) {
         //break session
         this.totalBreakCount++;
         this.totalBreakTime = this.totalBreakTime + record.length;
@@ -111,5 +83,27 @@ module.exports = class StatisticsPage extends Page {
     }
     this.chartData.labels = labels;
     return labels;
+  }
+
+  _createUI () {
+    this.append(
+      new TextView({
+        top: 16, left: 16, right: 16,
+        text: 'Weekly progress report',
+        font: '18px bold',
+        alignment: 'left'
+      }),
+      new TextView({
+        top: 'prev() 16', left: 16, right: 16,
+        text: 'You have completed ' + this.totalWorkCount + ' work sessions with a total duration of ' +
+        this.totalWorkTime + ' minutes and ' + this.totalBreakCount + ' break sessions with a total duration of ' +
+        this.totalBreakTime + ' minutes',
+        alignment: 'left'
+      }),
+      new ChartComposite({
+        chart: {type: 'Bar', data: this.chartData},
+        left: 0, top: 'prev() 0', right: 0, bottom: 0
+      })
+    );
   }
 };

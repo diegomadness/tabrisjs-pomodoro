@@ -1,52 +1,54 @@
 const {Button, NavigationView, ui} = require('tabris');
-const {appData} = require('./AppData');
 const HomePage = require('./pages/HomePage');
 const StatisticsPage = require('./pages/StatisticsPage');
 const SettingsPage = require('./pages/SettingsPage');
 const AboutPage = require('./pages/AboutPage');
+const Timer = require('./Timer');
+const Database = require('./Database');
+const AppData = require('./AppData');
 
 module.exports = class AppBootstrap {
   constructor () {
     // Enable the drawer - left slide menu
-    appData.drawer = ui.drawer;
-    appData.drawer.enabled = true;
-    //filling drawer with navigation buttons
-    this._drawerContent();
+    this.drawer = ui.drawer;
+    this.drawer.enabled = true;
+
+    this._drawerContent();//filling drawer with navigation buttons
 
     //top menu
     this.navigationView = new NavigationView({
-      left: 0,
-      top: 0,
-      right: 0,
-      bottom: 0,
+      left: 0, top: 0, right: 0, bottom: 0,
       drawerActionVisible: true //sandwich button for opening the drawer
     }).appendTo(ui.contentView);
 
+    this.timer = new Timer(this);
+    this.db = new Database(this);
+    this.appData = new AppData(localStorage);
+
     //creating main application page
-    appData.mainPage = new HomePage({
-      title: 'Easy Pomodoro'
-    }).appendTo(this.navigationView);
+    this.homePage = new HomePage({
+      title: 'Tabris Pomodoro'
+    }, this).appendTo(this.navigationView);
 
     //display fresh timer
-    appData.mainPage.clockDisplayWorkingTime();
+    this.homePage.clockDisplayWorkingTime();
   }
 
   _drawerContent () {
     new Button({
       left: 16, top: 16, right: 16,
       text: 'Statistics'
-    }).on('select', () => new StatisticsPage().appendTo(this.navigationView))
-      .appendTo(appData.drawer);
+    }).on({select: () => new StatisticsPage({}, this).appendTo(this.navigationView)})
+      .appendTo(this.drawer);
     new Button({
       left: 16, top: 'prev() 16', right: 16,
       text: 'Settings'
-    }).on('select', () => new SettingsPage().appendTo(this.navigationView))
-      .appendTo(appData.drawer);
+    }).on({select: () => new SettingsPage({}, this).appendTo(this.navigationView)})
+      .appendTo(this.drawer);
     new Button({
       left: 16, top: 'prev() 16', right: 16,
       text: 'About'
-    }).on('select', () => new AboutPage().appendTo(this.navigationView))
-      .appendTo(appData.drawer);
+    }).on({select: () => new AboutPage({}, this).appendTo(this.navigationView)})
+      .appendTo(this.drawer);
   }
 };
-

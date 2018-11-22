@@ -1,11 +1,10 @@
 const {Page, TextView} = require('tabris');
-const {appData} = require('../AppData');
 
 module.exports = class AboutPage extends Page {
-  constructor (properties) {
+  constructor (properties, app) {
     super(properties);
 
-    appData.drawer.close();
+    app.drawer.close();
     this.title = 'About';
     this._textAbout = 'This app was created by <a href="http://vnezapno.pro/">Yaroslav Starchenko</a> ' +
       'using <a href="https://tabris.com">Tabris Framework</a>.';
@@ -18,17 +17,13 @@ module.exports = class AboutPage extends Page {
   _createUI () {
     this.append(
       new TextView({
-        top: 10,
-        left: 10,
-        right: 10,
+        top: 10, left: 10, right: 10,
         markupEnabled: true,
         text: this._textAbout,
         alignment: 'left'
       }),
       new TextView({
-        top: 'prev() 10',
-        left: 10,
-        right: 10,
+        top: 'prev() 10', left: 10, right: 10,
         markupEnabled: true,
         text: this._textAbout2,
         alignment: 'left'

@@ -1,12 +1,10 @@
 const {Composite, Page, TextView, Slider} = require('tabris');
-const {appData} = require('../AppData');
-const {timer} = require('../Timer');
 
 module.exports = class SettingsPage extends Page {
-  constructor (properties) {
+  constructor (properties, app) {
     super(properties);
-
-    appData.drawer.close();
+    this._app = app;
+    app.drawer.close();
     this.title = 'Settings';
     this._createUI();
   }
@@ -15,8 +13,7 @@ module.exports = class SettingsPage extends Page {
     this.append(
       //Work session length
       new TextView({
-        top: 10,
-        left: 10,
+        top: 10, left: 10,
         text: 'Work session length',
         alignment: 'left'
       }),
@@ -25,8 +22,7 @@ module.exports = class SettingsPage extends Page {
       }),
       //Break length
       new TextView({
-        top: 'prev() 10',
-        left: 10,
+        top: 'prev() 10', left: 10,
         text: 'Break length',
         alignment: 'left'
       }),
@@ -37,38 +33,48 @@ module.exports = class SettingsPage extends Page {
 
     this.workLen = new TextView({
       right: 0,
-      text: appData.workInterval + ' min',
+      text: this._app.appData.workInterval + ' min',
       alignment: 'right'
     }).appendTo(this.workLenComposite);
 
     new Slider({
-      left: 0,
+      left: 0, right: 'next() 60',
+      selection: this._app.appData.workInterval,
       minimum: 1,
-      right: 'next() 60',
-      selection: appData.workInterval,
       maximum: 60
-    }).on('selectionChanged', ({value}) => {
-      appData.workInterval = value;
-      timer.forceRefresh();
-      this.workLen.text = value + ' min';
+    }).on({
+      selectionChanged: ({value}) => {
+        this._app.appData.workInterval = value;
+        //refresh timer on home page
+        this._app.timer.forceRefresh();
+        this._app.homePage.clockDisplayWorkingTime();
+        this._app.homePage.buttonsStanceInit();
+
+        this.workLen.text = value + ' min';
+      }
     }).appendTo(this.workLenComposite);
 
     this.breakLen = new TextView({
       right: 0,
-      text: appData.breakInterval + ' min',
+      text: this._app.appData.breakInterval + ' min',
       alignment: 'right'
     }).appendTo(this.breakLenComposite);
 
     new Slider({
-      left: 0,
+      left: 0, right: 'next() 60',
+      selection: this._app.appData.breakInterval,
       minimum: 1,
-      right: 'next() 60',
-      selection: appData.breakInterval,
       maximum: 15
-    }).on('selectionChanged', ({value}) => {
-      appData.breakInterval = value;
-      timer.forceRefresh();
-      this.breakLen.text = value + ' min';
+    }).on({
+      selectionChanged: ({value}) => {
+        this._app.appData.breakInterval = value;
+        //refresh timer on home page
+        this._app.timer.forceRefresh();
+        this._app.homePage.clockDisplayWorkingTime();
+        this._app.homePage.buttonsStanceInit();
+
+        this.breakLen.text = value + ' min';
+      }
     }).appendTo(this.breakLenComposite);
   }
 };
