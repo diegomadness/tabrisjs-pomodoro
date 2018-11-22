@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="example.tabris-pomodoro" version="1.0.0">
+<widget id="example.tabris.pomodoro" version="1.0.0">
   <name>Tabris Pomodoro</name>
   <description>
     Example Tabris.js App
