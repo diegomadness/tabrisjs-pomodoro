@@ -3,32 +3,33 @@ const Chart = require('chart.js');
 
 module.exports = class ChartComposite extends Composite {
 
-  constructor(properties) {
-    super(Object.assign({}, properties));
+  constructor (properties) {
+    super(properties);
+
     this._createUI();
     this._applyLayout();
   }
 
-  set chart(chart) {
+  set chart (chart) {
     this._chart = chart;
   }
 
-  get chart() {
+  get chart () {
     return this._chart;
   }
 
-  _createUI() {
+  _createUI () {
     this.append(
       new Button({id: 'drawChartButton', text: 'Productivity graph'})
-        .on('select', () =>this._drawChart()),
+        .on('select', () => this._drawChart()),
       new Composite({id: 'contentBox'})
         .append(new Canvas())
         .on({resize: (event) => this._layoutCanvas(event)})
     );
   }
 
-  _drawChart() {
-    let ctx = this._createCanvasContext();
+  _drawChart () {
+    const ctx = this._createCanvasContext();
     // workaround for scaling to native pixels by chart.js
     ctx.scale(1 / window.devicePixelRatio, 1 / window.devicePixelRatio);
     new Chart(ctx)[this.chart.type](this.chart.data, {
@@ -39,16 +40,16 @@ module.exports = class ChartComposite extends Composite {
     });
   }
 
-  _createCanvasContext() {
-    let canvas = this.find(Canvas).first();
-    let scaleFactor = device.scaleFactor;
-    let bounds = canvas.bounds;
-    let width = bounds.width * scaleFactor;
-    let height = bounds.height * scaleFactor;
+  _createCanvasContext () {
+    const canvas = this.find(Canvas).first();
+    const scaleFactor = device.scaleFactor;
+    const bounds = canvas.bounds;
+    const width = bounds.width * scaleFactor;
+    const height = bounds.height * scaleFactor;
     return canvas.getContext('2d', width, height);
   }
 
-  _applyLayout() {
+  _applyLayout () {
     this.apply({
       '#drawChartButton': {left: 16, top: 16},
       '#contentBox': {left: 16, top: '#drawChartButton 16', right: 16, bottom: 16},
@@ -56,7 +57,7 @@ module.exports = class ChartComposite extends Composite {
     });
   }
 
-  _layoutCanvas({width, height}) {
+  _layoutCanvas ({width, height}) {
     this.find(Canvas).set({width, height: Math.min(width, height)});
   }
 };
