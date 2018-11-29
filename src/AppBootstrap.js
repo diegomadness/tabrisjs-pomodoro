@@ -1,4 +1,4 @@
-const {Button, NavigationView, ui} = require('tabris');
+const {NavigationView, ui} = require('tabris');
 const HomePage = require('./pages/HomePage');
 const StatisticsPage = require('./pages/StatisticsPage');
 const SettingsPage = require('./pages/SettingsPage');
@@ -6,6 +6,7 @@ const AboutPage = require('./pages/AboutPage');
 const Timer = require('./Timer');
 const Database = require('./Database');
 const AppData = require('./AppData');
+const RedButton = require('./components/RedButton');
 
 module.exports = class AppBootstrap {
   constructor () {
@@ -17,6 +18,7 @@ module.exports = class AppBootstrap {
 
     //top menu
     this.navigationView = new NavigationView({
+      toolbarColor:'#ee5756',
       left: 0, top: 0, right: 0, bottom: 0,
       drawerActionVisible: true //sandwich button for opening the drawer
     }).appendTo(ui.contentView);
@@ -35,17 +37,17 @@ module.exports = class AppBootstrap {
   }
 
   _drawerContent () {
-    new Button({
+    new RedButton({
       left: 16, top: 16, right: 16,
       text: 'Statistics'
     }).on({select: () => new StatisticsPage({}, this).appendTo(this.navigationView)})
       .appendTo(this.drawer);
-    new Button({
+    new RedButton({
       left: 16, top: 'prev() 16', right: 16,
       text: 'Settings'
     }).on({select: () => new SettingsPage({}, this).appendTo(this.navigationView)})
       .appendTo(this.drawer);
-    new Button({
+    new RedButton({
       left: 16, top: 'prev() 16', right: 16,
       text: 'About'
     }).on({select: () => new AboutPage({}, this).appendTo(this.navigationView)})

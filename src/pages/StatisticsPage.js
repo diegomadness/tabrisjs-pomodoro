@@ -1,5 +1,5 @@
 const {TextView, Page} = require('tabris');
-const ChartComposite = require('../composites/ChartComposite');
+const ChartComposite = require('../components/ChartComposite');
 const moment = require('moment');
 
 module.exports = class StatisticsPage extends Page {

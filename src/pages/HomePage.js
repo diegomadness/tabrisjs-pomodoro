@@ -1,4 +1,5 @@
-const {Button, Composite, TextView, Page} = require('tabris');
+const {ImageView, Composite, TextView, Page} = require('tabris');
+const RedButton = require('../components/RedButton');
 
 module.exports = class HomePage extends Page {
 
@@ -75,9 +76,16 @@ module.exports = class HomePage extends Page {
       //New task and Break buttons appearing after finishing the task
       this._breakButtonGroup = this._createBreakButtonGroup(),
       //main timer clocks
+      this._bgImage = new ImageView({
+        left: 10, centerY:-50, right: 10,
+        image: 'images/bg-work.png',
+        background: '#fff',
+        scaleMode: 'fit'
+      }),
       this._timerClocks = new TextView({
-        left: 10, top: '20%', right: 10,
-        font: '80px',
+        left: 10, centerY:-50, right: 10,
+        textColor: '#fff',
+        font: '50px',
         alignment: 'center'
       })
     );
@@ -86,84 +94,85 @@ module.exports = class HomePage extends Page {
   _createTimerButtonGroup () {
     //timer button group - play, pause, stop and resume buttons
     return new Composite({
-      left: 0, bottom: 0, right: 0,
+      left: 0, bottom: 40, right: 0,
     }).append(
-      this._playButton = new Button({
-        centerX: 0, top: 16, bottom: 20,
-        text: 'Start',
-        image: {src: 'images/play-button.png', width: 16, height: 16}
+      this._playButton = new RedButton({
+        centerX: 0,  bottom: 0,
+        text: ' Start',
+        image: {src: 'images/play-button.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.startWorking()}),
 
-      this._pauseButton = new Button({
-        left: '15%', top: 16, bottom: 20,
+      this._pauseButton = new RedButton({
+        left: '15%',  bottom: 0,
         text: 'Pause',
         visible: false,
-        image: {src: 'images/pause-button.png', width: 16, height: 16}
+        image: {src: 'images/pause-button.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.pauseWorking()}),
 
-      this._resumeButton = new Button({
-        left: '15%', top: 16, bottom: 20,
+      this._resumeButton = new RedButton({
+        width: 110,
+        left: '15%',  bottom: 0,
         text: 'Resume',
         visible: false,
-        image: {src: 'images/play-button.png', width: 16, height: 16}
+        image: {src: 'images/play-button.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.resumeWorking()}),
 
-      this._stopButton = new Button({
-        right: '15%',
-        top: 16,
-        bottom: 20,
-        text: 'Start over',
+      this._stopButton = new RedButton({
+        width: 110,
+        right: '15%', bottom: 0,
+        text: 'Restart',
         visible: false,
-        image: {src: 'images/stop-button.png', width: 16, height: 16}
+        image: {src: 'images/reload.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.startOverWorking()})
     );
   }
 
   _createFinishButtonGroup () {
     return new Composite({
-      left: 0, bottom: 0, right: 0,
+      left: 0, bottom: 40, right: 0,
       visible: false,
     }).append(
-      this._nextTaskButton = new Button({
-        id: 'nextTaskButton',
-        left: '15%', top: 16, bottom: 20,
+      this._nextTaskButton = new RedButton({
+        width: 130,
+        left: '15%',  bottom: 0,
         text: 'Next task',
         visible: true,
-        image: {src: 'images/play-button.png', width: 16, height: 16}
+        image: {src: 'images/play-button.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.startOverWorking()}),
-      this._breakButton = new Button({
-        right: '15%', top: 16, bottom: 20,
-        text: 'Take a break',
+      this._breakButton = new RedButton({
+        right: '15%',  bottom: 0,
+        text: 'Break',
         visible: true,
-        image: {src: 'images/pause-button.png', width: 16, height: 16}
+        image: {src: 'images/coffee.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.startBreak()})
     );
   }
 
   _createBreakButtonGroup () {
     return new Composite({
-      left: 0, bottom: 0, right: 0,
+      left: 0, bottom: 40, right: 0,
       visible: false,
     }).append(
-      this._resumeBreakButton = new Button({
-        left: '15%', top: 16, bottom: 20,
-        text: 'Resume break',
+      this._resumeBreakButton = new RedButton({
+        width:110,
+        left: '15%',  bottom: 0,
+        text: 'Resume',
         visible: false,
-        image: {src: 'images/play-button.png', width: 16, height: 16}
+        image: {src: 'images/play-button.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.resumeBreak()}),
 
-      this._pauseBreakButton = new Button({
-        left: '15%', top: 16, bottom: 20,
-        text: 'Pause break',
+      this._pauseBreakButton = new RedButton({
+        left: '15%',  bottom: 0,
+        text: 'Pause',
         visible: true,
-        image: {src: 'images/pause-button.png', width: 16, height: 16}
+        image: {src: 'images/pause-button.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.pauseBreak()}),
 
-      this._finishBreakButton = new Button({
-        right: '15%', top: 16, bottom: 20,
-        text: 'Finish break',
+      this._finishBreakButton = new RedButton({
+        right: '15%',  bottom: 0,
+        text: 'Finish',
         visible: true,
-        image: {src: 'images/stop-button.png', width: 16, height: 16}
+        image: {src: 'images/cancel.png', width: 18, height: 18}
       }).on({select: () => this._app.timer.forceFinishBreak()})
     );
   }
