@@ -29,7 +29,7 @@ class App {
 
     //creating main application page
     this.homePage = new HomePage({
-      title: 'Tabris Pomodoro'
+      title: 'Easy Pomodoro'
     }, this).appendTo(this.navigationView);
 
     //display fresh timer
